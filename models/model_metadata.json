@@ -1,0 +1,139 @@
+{
+  "model_name": "Random Forest",
+  "model_version": "churn-rf-v1",
+  "dataset_id": "telco_churn.csv",
+  "dataset_version": "telco_churn-88be4b93fbe0",
+  "training_timestamp": "2026-11-14T17:27:23+00:00",
+  "feature_schema_version": "v1",
+  "preprocessing_version": "v1",
+  "sklearn_version": "1.9.1",
+  "hyperparameters": {
+    "class_weight": "balanced",
+    "max_depth": null,
+    "max_features": 0.5,
+    "min_samples_leaf": 7,
+    "min_samples_split": 10,
+    "n_estimators": 427
+  },
+  "search_config": {
+    "method": "RandomizedSearchCV",
+    "n_iter": 20,
+    "scoring": "f1",
+    "seed": 42
+  },
+  "cv_config": {
+    "inner": "StratifiedKFold(3)",
+    "outer": "StratifiedKFold(5)"
+  },
+  "threshold": 0.5,
+  "risk_tiers": {
+    "HIGH": 0.5,
+    "MEDIUM": 0.25,
+    "LOW": 0.0
+  },
+  "metrics": {
+    "baseline_cv_f1": 0.5923,
+    "nested_cv_f1_mean": 0.6311,
+    "nested_cv_f1_std": 0.0128,
+    "test": {
+      "Accuracy": 0.7665,
+      "Precision": 0.5425,
+      "Recall": 0.7674,
+      "F1": 0.6357,
+      "ROC-AUC": 0.8388,
+      "PR-AUC": 0.6417
+    },
+    "test_baseline_f1": 0.604,
+    "test_confusion_matrix": [
+      [
+        793,
+        242
+      ],
+      [
+        87,
+        287
+      ]
+    ]
+  },
+  "feature_schema": {
+    "numerical": {
+      "SeniorCitizen": "int64",
+      "tenure": "int64",
+      "MonthlyCharges": "float64",
+      "TotalCharges": "float64"
+    },
+    "categorical": {
+      "gender": [
+        "Female",
+        "Male"
+      ],
+      "Partner": [
+        "No",
+        "Yes"
+      ],
+      "Dependents": [
+        "No",
+        "Yes"
+      ],
+      "PhoneService": [
+        "No",
+        "Yes"
+      ],
+      "MultipleLines": [
+        "No",
+        "No phone service",
+        "Yes"
+      ],
+      "InternetService": [
+        "DSL",
+        "Fiber optic",
+        "No"
+      ],
+      "OnlineSecurity": [
+        "No",
+        "No internet service",
+        "Yes"
+      ],
+      "OnlineBackup": [
+        "No",
+        "No internet service",
+        "Yes"
+      ],
+      "DeviceProtection": [
+        "No",
+        "No internet service",
+        "Yes"
+      ],
+      "TechSupport": [
+        "No",
+        "No internet service",
+        "Yes"
+      ],
+      "StreamingTV": [
+        "No",
+        "No internet service",
+        "Yes"
+      ],
+      "StreamingMovies": [
+        "No",
+        "No internet service",
+        "Yes"
+      ],
+      "Contract": [
+        "Month-to-month",
+        "One year",
+        "Two year"
+      ],
+      "PaperlessBilling": [
+        "No",
+        "Yes"
+      ],
+      "PaymentMethod": [
+        "Bank transfer (automatic)",
+        "Credit card (automatic)",
+        "Electronic check",
+        "Mailed check"
+      ]
+    }
+  }
+}

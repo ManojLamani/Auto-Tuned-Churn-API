@@ -1,0 +1,164 @@
+[
+  {
+    "run_id": "baseline-01",
+    "model": "Dummy (stratified)",
+    "type": "baseline",
+    "cv": "StratifiedKFold(5)",
+    "cv_f1_mean": 0.276206,
+    "cv_f1_std": 0.024903,
+    "dataset_version": "telco_churn-88be4b93fbe0",
+    "split_seed": 42,
+    "test_size": 0.2,
+    "scoring": "f1",
+    "timestamp": "2026-11-14T17:27:23+00:00"
+  },
+  {
+    "run_id": "baseline-02",
+    "model": "Logistic Regression (default)",
+    "type": "baseline",
+    "cv": "StratifiedKFold(5)",
+    "cv_f1_mean": 0.592329,
+    "cv_f1_std": 0.029851,
+    "dataset_version": "telco_churn-88be4b93fbe0",
+    "split_seed": 42,
+    "test_size": 0.2,
+    "scoring": "f1",
+    "timestamp": "2026-11-14T17:27:23+00:00"
+  },
+  {
+    "run_id": "nested-logistic-regression",
+    "model": "Logistic Regression",
+    "type": "nested_cv_random_search",
+    "search_space": {
+      "C": "loguniform(0.001, 100.0)",
+      "class_weight": [
+        "None",
+        "balanced"
+      ]
+    },
+    "n_iter": 20,
+    "inner_cv": "StratifiedKFold(3)",
+    "outer_cv": "StratifiedKFold(5)",
+    "outer_fold_f1": [
+      0.632844,
+      0.589947,
+      0.620779,
+      0.646983,
+      0.630582
+    ],
+    "cv_f1_mean": 0.624227,
+    "cv_f1_std": 0.019076,
+    "runtime_sec": 8.317651,
+    "dataset_version": "telco_churn-88be4b93fbe0",
+    "split_seed": 42,
+    "test_size": 0.2,
+    "scoring": "f1",
+    "timestamp": "2026-11-14T17:27:23+00:00"
+  },
+  {
+    "run_id": "nested-random-forest",
+    "model": "Random Forest",
+    "type": "nested_cv_random_search",
+    "search_space": {
+      "n_estimators": "randint(100, 501)",
+      "max_depth": [
+        "None",
+        "4",
+        "6",
+        "8",
+        "10",
+        "12",
+        "16",
+        "20"
+      ],
+      "min_samples_split": "randint(2, 21)",
+      "min_samples_leaf": "randint(1, 21)",
+      "max_features": [
+        "sqrt",
+        "log2",
+        "0.3",
+        "0.5"
+      ],
+      "class_weight": [
+        "None",
+        "balanced",
+        "balanced_subsample"
+      ]
+    },
+    "n_iter": 20,
+    "inner_cv": "StratifiedKFold(3)",
+    "outer_cv": "StratifiedKFold(5)",
+    "outer_fold_f1": [
+      0.636977,
+      0.60749,
+      0.629275,
+      0.644444,
+      0.637555
+    ],
+    "cv_f1_mean": 0.631148,
+    "cv_f1_std": 0.012768,
+    "runtime_sec": 73.036928,
+    "dataset_version": "telco_churn-88be4b93fbe0",
+    "split_seed": 42,
+    "test_size": 0.2,
+    "scoring": "f1",
+    "timestamp": "2026-11-14T17:27:23+00:00"
+  },
+  {
+    "run_id": "final-fit",
+    "model": "Random Forest",
+    "type": "final_random_search",
+    "search_space": {
+      "n_estimators": "randint(100, 501)",
+      "max_depth": [
+        "None",
+        "4",
+        "6",
+        "8",
+        "10",
+        "12",
+        "16",
+        "20"
+      ],
+      "min_samples_split": "randint(2, 21)",
+      "min_samples_leaf": "randint(1, 21)",
+      "max_features": [
+        "sqrt",
+        "log2",
+        "0.3",
+        "0.5"
+      ],
+      "class_weight": [
+        "None",
+        "balanced",
+        "balanced_subsample"
+      ]
+    },
+    "n_iter": 20,
+    "inner_cv": "StratifiedKFold(3)",
+    "best_params": {
+      "class_weight": "balanced",
+      "max_depth": null,
+      "max_features": 0.5,
+      "min_samples_leaf": 7,
+      "min_samples_split": 10,
+      "n_estimators": 427
+    },
+    "cv_f1_mean": 0.63661,
+    "threshold": 0.5,
+    "test_metrics": {
+      "Accuracy": 0.7665,
+      "Precision": 0.5425,
+      "Recall": 0.7674,
+      "F1": 0.6357,
+      "ROC-AUC": 0.8388,
+      "PR-AUC": 0.6417
+    },
+    "runtime_sec": 18.269848,
+    "dataset_version": "telco_churn-88be4b93fbe0",
+    "split_seed": 42,
+    "test_size": 0.2,
+    "scoring": "f1",
+    "timestamp": "2026-11-14T17:27:23+00:00"
+  }
+]
