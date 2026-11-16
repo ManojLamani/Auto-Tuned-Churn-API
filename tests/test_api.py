@@ -4,6 +4,7 @@ import json
 import pytest
 
 from backend.app.config import MODELS_DIR
+from backend.app.monitoring import RateLimiter
 from backend.app.predictor import Predictor
 
 PREDICT = "/api/v1/predict"
@@ -16,6 +17,7 @@ def test_001_valid_prediction(client, customer):
     assert 0 <= body["churnProbability"] <= 1
     assert body["riskTier"] in {"HIGH", "MEDIUM", "LOW"}
     assert body["modelVersion"] == "churn-rf-v1"
+    assert body["preprocessingVersion"] == "v1"
     assert r.headers["X-Request-ID"] == body["predictionId"]
 
 
@@ -76,3 +78,25 @@ def test_malformed_json_and_unknown_route(client):
 def test_startup_fails_without_artifact(tmp_path):
     with pytest.raises(FileNotFoundError):
         Predictor(tmp_path)
+
+
+def test_rate_limited(client, customer):
+    saved = client.app.state.limiter
+    client.app.state.limiter = RateLimiter(2)
+    try:
+        codes = [client.post(PREDICT, json=customer).status_code for _ in range(3)]
+        assert codes == [200, 200, 429]
+        assert client.post(PREDICT, json=customer).json()["error"]["code"] == "RATE_LIMITED"
+    finally:
+        client.app.state.limiter = saved
+
+
+def test_metrics(client, customer):
+    before = client.get("/api/v1/metrics").json()
+    client.post(PREDICT, json=customer)
+    client.get("/api/v1/unknown")
+    after = client.get("/api/v1/metrics").json()
+    assert after["predictions"] == before["predictions"] + 1
+    assert after["errors"] >= before["errors"] + 1
+    assert after["latencyMs"]["p95"] is not None
+    assert after["modelVersion"] == "churn-rf-v1" and after["modelLoadMs"] > 0
