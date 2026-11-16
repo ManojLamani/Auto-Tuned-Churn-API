@@ -17,7 +17,9 @@
     "split_seed": 42,
     "test_size": 0.2,
     "scoring": "f1",
-    "timestamp": "2026-11-15T20:58:48+00:00"
+    "timestamp": "2026-11-16T04:54:25+00:00",
+    "preprocessing_version": "v1",
+    "artifact_version": "churn-rf-v1"
   },
   {
     "run_id": "baseline-02",
@@ -37,7 +39,9 @@
     "split_seed": 42,
     "test_size": 0.2,
     "scoring": "f1",
-    "timestamp": "2026-11-15T20:58:48+00:00"
+    "timestamp": "2026-11-16T04:54:25+00:00",
+    "preprocessing_version": "v1",
+    "artifact_version": "churn-rf-v1"
   },
   {
     "run_id": "nested-logistic-regression",
@@ -91,12 +95,14 @@
         "class_weight": "balanced"
       }
     ],
-    "runtime_sec": 33.3,
+    "runtime_sec": 27.2,
     "dataset_version": "telco_churn-88be4b93fbe0",
     "split_seed": 42,
     "test_size": 0.2,
     "scoring": "f1",
-    "timestamp": "2026-11-15T20:58:48+00:00"
+    "timestamp": "2026-11-16T04:54:25+00:00",
+    "preprocessing_version": "v1",
+    "artifact_version": "churn-rf-v1"
   },
   {
     "run_id": "nested-random-forest",
@@ -189,12 +195,14 @@
         "n_estimators": 406
       }
     ],
-    "runtime_sec": 131.7,
+    "runtime_sec": 96.7,
     "dataset_version": "telco_churn-88be4b93fbe0",
     "split_seed": 42,
     "test_size": 0.2,
     "scoring": "f1",
-    "timestamp": "2026-11-15T20:58:48+00:00"
+    "timestamp": "2026-11-16T04:54:25+00:00",
+    "preprocessing_version": "v1",
+    "artifact_version": "churn-rf-v1"
   },
   {
     "run_id": "final-fit",
@@ -256,11 +264,13 @@
         ]
       ]
     },
-    "runtime_sec": 48.8,
+    "runtime_sec": 53.8,
     "dataset_version": "telco_churn-88be4b93fbe0",
     "split_seed": 42,
     "test_size": 0.2,
     "scoring": "f1",
-    "timestamp": "2026-11-15T20:58:48+00:00"
+    "timestamp": "2026-11-16T04:54:25+00:00",
+    "preprocessing_version": "v1",
+    "artifact_version": "churn-rf-v1"
   }
 ]
