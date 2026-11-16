@@ -40,4 +40,5 @@ class Prediction(BaseModel):
     riskTier: Literal["HIGH", "MEDIUM", "LOW"]
     threshold: float
     modelVersion: str
+    preprocessingVersion: str
     timestamp: str
