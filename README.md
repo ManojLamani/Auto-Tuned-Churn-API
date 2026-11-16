@@ -113,46 +113,62 @@ Auto-Tuned-Churn-API/
 
 ---
 
-## 🚀 Quickstart & Setup (Upcoming Phases)
+## 🚀 Quickstart & Setup
 
 ### 1. Prerequisites
-- **Python**: 3.10 or higher
-- **Node.js**: v18 or higher (for frontend dashboard)
-- **Docker**: (Optional, for containerized run)
+- **Python**: 3.14
+- **Node.js**: 24 (for the dashboard)
+- **Docker**: optional, for the containerized run
 
 ### 2. Environment Setup
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/Auto-Tuned-Churn-API.git
+git clone https://github.com/ManojLamani/Auto-Tuned-Churn-API.git
 cd Auto-Tuned-Churn-API
-
-# Set up Python virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 3. Pipeline Execution
+### 3. Training Pipeline
+The EDA and step-by-step analysis live in `notebooks/01_dataset_preparation.ipynb`.
 ```bash
-# Step 1: Run data validation and EDA
-python -m training.eda.distributions
-
-# Step 2: Execute Nested CV & Random Search
+# Nested CV + Random Search only (prints outer-fold F1 per candidate)
 python -m training.models.nested_cv
 
-# Step 3: Train final model & export versioned artifact
+# Full run: baselines, nested CV, final fit, threshold, one test evaluation,
+# then saves models/churn-rf-v1.joblib, model_metadata.json and experiment_log.json
 python -m training.models.train_final
 ```
 
 ### 4. Running the Serving Stack
 ```bash
-# Start FastAPI backend (port 8000)
+# FastAPI backend: http://127.0.0.1:8000/docs
 uvicorn backend.app.main:app --reload --port 8000
 
-# Start React analyst dashboard (port 3000)
+# React dashboard: http://127.0.0.1:5173 (proxies /api to the backend)
 cd frontend
 npm install
 npm run dev
+```
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/v1/health` | Service and model health (503 when the model is not loaded) |
+| POST | `/api/v1/predict` | Churn probability, risk tier, threshold and model version |
+| GET | `/api/v1/model` | Model metadata and metrics |
+| GET | `/api/v1/experiments` | Tuning experiment log |
+| GET | `/api/v1/model-card` | Model card |
+
+### 5. Docker
+```bash
+docker compose up -d --build
+```
+Dashboard on http://localhost:3000, API on http://localhost:8000. Use `API_PORT` / `WEB_PORT` to change the host ports.
+
+### 6. Tests
+```bash
+pytest -q                     # API, determinism, leakage and nested CV tests
+cd frontend && npm test       # UI error-state test
 ```
 
 ---
