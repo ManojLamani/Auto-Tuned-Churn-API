@@ -2,11 +2,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
+from backend.app.monitoring import RateLimiter
 
 
 @pytest.fixture(scope="session")
 def client():
     with TestClient(app) as c:
+        app.state.limiter = RateLimiter(100_000)  # tests send many requests; 429 is tested separately
         yield c
 
 
