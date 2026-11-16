@@ -158,6 +158,9 @@ npm run dev
 | GET | `/api/v1/model` | Model metadata and metrics |
 | GET | `/api/v1/experiments` | Tuning experiment log |
 | GET | `/api/v1/model-card` | Model card |
+| GET | `/api/v1/metrics` | Request/error counts, p50/p95 latency, prediction and risk-tier counts |
+
+`/predict` is rate limited per client (default 60 per minute, set `RATE_LIMIT_PER_MINUTE`); extra requests get 429.
 
 ### 5. Docker
 ```bash
