@@ -19,6 +19,7 @@ export default function App() {
   const [page, setPage] = useState(pageFromHash);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [health, setHealth] = useState(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -38,6 +39,17 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, [load]);
 
+  // Re-check health every 30 s so the page notices an offline API or a newly deployed model.
+  useEffect(() => {
+    if (!data) return;
+    const check = () =>
+      api.health().then((h) => setHealth({ ok: true, version: h.modelVersion })).catch(() => setHealth({ ok: false }));
+    check();
+    const id = setInterval(check, 30000);
+    return () => clearInterval(id);
+  }, [data]);
+
+  const stale = data && health?.ok && health.version !== data.model.model_version;
   const Page = PAGES.find((p) => p.id === page).component;
 
   return (
@@ -72,9 +84,20 @@ export default function App() {
       <div className="flex-1 lg:pl-64">
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/80 px-6 py-3 backdrop-blur">
           <h1 className="text-base font-semibold text-slate-900">{PAGES.find((p) => p.id === page).label}</h1>
-          <ApiStatus data={data} error={error} />
+          <ApiStatus data={data} error={error || health?.ok === false} />
         </header>
         <main className="mx-auto max-w-7xl p-4 sm:p-6">
+          {stale && (
+            <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              <p>
+                <b>Model metadata is out of date.</b> The API now serves <b>{health.version}</b>, but this page shows{" "}
+                <b>{data.model.model_version}</b>.
+              </p>
+              <button onClick={load} className="rounded-lg bg-amber-600 px-3 py-1.5 font-semibold text-white hover:bg-amber-700">
+                Reload data
+              </button>
+            </div>
+          )}
           {error ? (
             <ErrorState message={error} onRetry={load} />
           ) : !data ? (
