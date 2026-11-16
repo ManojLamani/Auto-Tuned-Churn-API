@@ -244,9 +244,16 @@ function Result({ state, model }) {
 
       <dl className="mt-5 grid grid-cols-2 gap-3 text-xs">
         <div><dt className="text-slate-500">Model</dt><dd className="font-medium text-slate-900">{r.modelVersion}</dd></div>
+        <div><dt className="text-slate-500">Preprocessing</dt><dd className="font-medium text-slate-900">{r.preprocessingVersion}</dd></div>
         <div><dt className="text-slate-500">Scored at</dt><dd className="font-medium text-slate-900">{new Date(r.timestamp).toLocaleString()}</dd></div>
-        <div className="col-span-2"><dt className="text-slate-500">Prediction ID</dt><dd className="font-mono text-slate-900">{r.predictionId}</dd></div>
+        <div><dt className="text-slate-500">Prediction ID</dt><dd className="font-mono text-slate-900">{r.predictionId}</dd></div>
       </dl>
+
+      {r.modelVersion !== model.model_version && (
+        <p role="alert" className="mt-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
+          Scored by {r.modelVersion}, but this page shows metrics for {model.model_version}. Reload the page.
+        </p>
+      )}
 
       <p className="mt-5 border-t border-slate-100 pt-4 text-xs leading-relaxed text-slate-500">
         This is a statistical estimate to help prioritise outreach, not a certainty. Use it with human judgement and
