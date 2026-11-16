@@ -38,3 +38,25 @@ test("warns when the API serves a different model than the page shows", async ()
   expect(await screen.findByText(/Model metadata is out of date/)).toBeTruthy();
   expect(screen.getByRole("button", { name: "Reload data" })).toBeTruthy();
 });
+
+test("recovers automatically once the API comes back", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  const card = { modelDetails: { hyperparameters: {} }, outOfScope: [], evaluation: {}, limitations: [] };
+  const responses = {
+    "/api/v1/model": { model_version: "churn-rf-v1" },
+    "/api/v1/experiments": [],
+    "/api/v1/model-card": card,
+    "/api/v1/health": { status: "ok", modelVersion: "churn-rf-v1" },
+  };
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
+  window.location.hash = "#model-card";
+  render(<App />);
+  expect(await screen.findByText("Service unavailable")).toBeTruthy();
+
+  fetchMock.mockImplementation(async (url) => ({ ok: true, json: async () => responses[url] }));
+  await vi.advanceTimersByTimeAsync(5000);
+
+  expect(await screen.findByText("Intended use")).toBeTruthy();
+  expect(screen.queryByText("Service unavailable")).toBeNull();
+  vi.useRealTimers();
+});
