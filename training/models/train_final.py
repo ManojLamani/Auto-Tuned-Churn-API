@@ -19,6 +19,7 @@ from training.config import (
     MODELS_DIR,
     N_ITER,
     OUTER_FOLDS,
+    PREPROCESSING_VERSION,
     SEARCH_SPACES,
     SEED,
     TEST_SIZE,
@@ -43,6 +44,16 @@ def describe_space(space):
     }
 
 
+def feature_importance(model, top=15):
+    """Top features by importance (trees) or absolute coefficient (linear models)."""
+    names = model.named_steps["preprocessing"].get_feature_names_out()
+    step = model.named_steps["model"]
+    values = step.feature_importances_ if hasattr(step, "feature_importances_") else abs(step.coef_[0])
+    ranked = sorted(zip(names, values, strict=True), key=lambda x: -x[1])[:top]
+    return [{"feature": n.split("__", 1)[1].replace("_", ": ", 1) if n.startswith("cat__") else n.split("__", 1)[1],
+             "importance": round(float(v), 4)} for n, v in ranked]
+
+
 def clean_params(params):
     return {k.removeprefix("model__"): (round(float(v), 6) if isinstance(v, float) else v)
             for k, v in params.items()}
@@ -54,7 +65,8 @@ def main():
     X_train, X_test, y_train, y_test = split(X, y)
     cv5 = StratifiedKFold(5, shuffle=True, random_state=SEED)
     common = {"dataset_version": dataset_version(), "split_seed": SEED,
-              "test_size": TEST_SIZE, "scoring": "f1", "timestamp": run_time}
+              "test_size": TEST_SIZE, "scoring": "f1", "timestamp": run_time,
+              "preprocessing_version": PREPROCESSING_VERSION}
     log = []
 
     # 1. Baselines (training set CV only)
@@ -120,6 +132,8 @@ def main():
     # 6. Save the versioned artifact
     numerical, categorical = feature_types(X_train)
     version = "churn-" + ("lr" if champion == "Logistic Regression" else "rf") + "-v1"
+    for run in log:
+        run["artifact_version"] = version
     metadata = {
         "model_name": champion,
         "model_version": version,
@@ -127,13 +141,14 @@ def main():
         "dataset_version": dataset_version(),
         "training_timestamp": run_time,
         "feature_schema_version": "v1",
-        "preprocessing_version": "v1",
+        "preprocessing_version": PREPROCESSING_VERSION,
         "sklearn_version": sklearn.__version__,
         "hyperparameters": clean_params(search.best_params_),
         "search_config": {"method": "RandomizedSearchCV", "n_iter": N_ITER, "scoring": "f1", "seed": SEED},
         "cv_config": {"inner": f"StratifiedKFold({INNER_FOLDS})", "outer": f"StratifiedKFold({OUTER_FOLDS})"},
         "threshold": threshold,
         "risk_tiers": tiers,
+        "feature_importance": feature_importance(model),
         "metrics": {
             "baseline_cv_f1": log[1]["cv_f1_mean"],
             "nested_cv_f1_mean": nested[champion]["means"]["f1"],
