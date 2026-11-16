@@ -79,11 +79,40 @@ export default function Overview({ model, experiments }) {
         </Card>
       </div>
 
+      {model.feature_importance && <FeatureImportance items={model.feature_importance} name={model.model_name} />}
+
       <div className="grid gap-6 lg:grid-cols-2">
         <ConfusionMatrix cm={m.test.confusion_matrix} threshold={model.threshold} />
         <TierDistribution tiers={m.test_risk_tiers} riskTiers={model.risk_tiers} />
       </div>
     </div>
+  );
+}
+
+function FeatureImportance({ items, name }) {
+  const max = items[0].importance;
+  return (
+    <Card
+      title="Top churn drivers"
+      subtitle={`${name} feature importance. Shows association with churn, not cause.`}
+    >
+      <ol className="grid gap-x-10 gap-y-3 md:grid-cols-2">
+        {items.map((f, i) => (
+          <li key={f.feature} className="grid grid-cols-[1.5rem_1fr] items-center gap-2 text-sm">
+            <span className="text-xs tabular-nums text-slate-400">{i + 1}</span>
+            <div>
+              <div className="mb-1 flex justify-between gap-3">
+                <span className="truncate text-slate-700">{f.feature}</span>
+                <span className="tabular-nums text-slate-500">{f.importance.toFixed(3)}</span>
+              </div>
+              <div className="h-2 rounded-full bg-slate-100">
+                <div className="h-2 rounded-full bg-indigo-500" style={{ width: `${(f.importance / max) * 100}%` }} />
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </Card>
   );
 }
 
