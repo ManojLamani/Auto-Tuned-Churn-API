@@ -56,7 +56,7 @@ export default function ModelCard({ card }) {
             {Object.entries(d.hyperparameters).map(([k, v]) => (
               <div key={k} className="flex justify-between border-b border-slate-100 py-1">
                 <dt className="font-mono text-xs text-slate-500">{k}</dt>
-                <dd className="font-mono text-xs text-slate-900">{String(v)}</dd>
+                <dd className="font-mono text-xs text-slate-900">{v === null ? "None" : String(v)}</dd>
               </div>
             ))}
           </dl>
