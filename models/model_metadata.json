@@ -3,7 +3,7 @@
   "model_version": "churn-rf-v1",
   "dataset_id": "telco_churn.csv",
   "dataset_version": "telco_churn-88be4b93fbe0",
-  "training_timestamp": "2026-11-15T20:58:48+00:00",
+  "training_timestamp": "2026-11-16T04:54:25+00:00",
   "feature_schema_version": "v1",
   "preprocessing_version": "v1",
   "sklearn_version": "1.9.1",
@@ -31,6 +31,68 @@
     "MEDIUM": 0.25,
     "LOW": 0.0
   },
+  "feature_importance": [
+    {
+      "feature": "Contract: Month-to-month",
+      "importance": 0.2615
+    },
+    {
+      "feature": "TotalCharges",
+      "importance": 0.1127
+    },
+    {
+      "feature": "MonthlyCharges",
+      "importance": 0.107
+    },
+    {
+      "feature": "tenure",
+      "importance": 0.1049
+    },
+    {
+      "feature": "OnlineSecurity: No",
+      "importance": 0.0738
+    },
+    {
+      "feature": "InternetService: Fiber optic",
+      "importance": 0.0452
+    },
+    {
+      "feature": "TechSupport: No",
+      "importance": 0.0449
+    },
+    {
+      "feature": "Contract: Two year",
+      "importance": 0.0404
+    },
+    {
+      "feature": "PaymentMethod: Electronic check",
+      "importance": 0.0198
+    },
+    {
+      "feature": "Contract: One year",
+      "importance": 0.0151
+    },
+    {
+      "feature": "InternetService: DSL",
+      "importance": 0.0099
+    },
+    {
+      "feature": "gender: Male",
+      "importance": 0.0099
+    },
+    {
+      "feature": "gender: Female",
+      "importance": 0.0097
+    },
+    {
+      "feature": "OnlineBackup: No",
+      "importance": 0.0094
+    },
+    {
+      "feature": "PaperlessBilling: Yes",
+      "importance": 0.009
+    }
+  ],
   "metrics": {
     "baseline_cv_f1": 0.5923,
     "nested_cv_f1_mean": 0.6311,
