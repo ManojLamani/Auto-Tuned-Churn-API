@@ -79,7 +79,7 @@ export default function Experiments({ experiments, model }) {
             {Object.entries(final.best_params).map(([k, v]) => (
               <div key={k} className="rounded-lg bg-slate-50 px-3 py-2">
                 <dt className="text-xs text-slate-500">{k}</dt>
-                <dd className="font-mono text-sm text-slate-900">{String(v)}</dd>
+                <dd className="font-mono text-sm text-slate-900">{v === null ? "None" : String(v)}</dd>
               </div>
             ))}
             <div className="rounded-lg bg-indigo-50 px-3 py-2">
