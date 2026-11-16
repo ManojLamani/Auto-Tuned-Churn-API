@@ -14,8 +14,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
-from backend.app.config import CORS_ORIGINS, MODELS_DIR
+from backend.app.config import CORS_ORIGINS, MODELS_DIR, RATE_LIMIT_PER_MINUTE
 from backend.app.model_card import build_model_card
+from backend.app.monitoring import Metrics, RateLimiter
 from backend.app.predictor import Predictor
 from backend.app.schemas import Customer, Prediction
 
@@ -25,9 +26,13 @@ log = logging.getLogger("churn-api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.metrics = Metrics()
+    app.state.limiter = RateLimiter(RATE_LIMIT_PER_MINUTE)
+    start = time.perf_counter()
     try:
         app.state.predictor = Predictor(MODELS_DIR)
-        log.info("Loaded model %s", app.state.predictor.version)
+        app.state.metrics.model_load_ms = round((time.perf_counter() - start) * 1000, 1)
+        log.info("Loaded model %s in %s ms", app.state.predictor.version, app.state.metrics.model_load_ms)
     except Exception as exc:  # the service still starts, but reports degraded health
         app.state.predictor = None
         log.error("Model failed to load: %s", exc)
@@ -41,17 +46,22 @@ app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["G
 
 @app.middleware("http")
 async def request_logging(request: Request, call_next):
-    """Log request ID, route, status and latency. Customer inputs are never logged."""
+    """Log request ID, route, status, latency, model version and error code. Inputs are never logged."""
     request.state.request_id = uuid.uuid4().hex[:12]
     start = time.perf_counter()
     response = await call_next(request)
+    latency_ms = (time.perf_counter() - start) * 1000
     response.headers["X-Request-ID"] = request.state.request_id
-    log.info("id=%s %s %s status=%s latency_ms=%.1f", request.state.request_id, request.method,
-             request.url.path, response.status_code, (time.perf_counter() - start) * 1000)
+    request.app.state.metrics.record_request(response.status_code, latency_ms)
+    predictor = request.app.state.predictor
+    log.info("id=%s %s %s status=%s latency_ms=%.1f model=%s error=%s", request.state.request_id,
+             request.method, request.url.path, response.status_code, latency_ms,
+             predictor.version if predictor else None, getattr(request.state, "error_code", None))
     return response
 
 
 def error(request: Request, status: int, code: str, message: str, details=None):
+    request.state.error_code = code
     body = {"code": code, "message": message, "requestId": getattr(request.state, "request_id", None)}
     if details:
         body["details"] = details
@@ -68,7 +78,7 @@ async def validation_error(request: Request, exc: RequestValidationError):
 
 @app.exception_handler(HTTPException)
 async def http_error(request: Request, exc: HTTPException):
-    codes = {404: "NOT_FOUND", 405: "METHOD_NOT_ALLOWED", 503: "MODEL_UNAVAILABLE"}
+    codes = {404: "NOT_FOUND", 405: "METHOD_NOT_ALLOWED", 429: "RATE_LIMITED", 503: "MODEL_UNAVAILABLE"}
     return error(request, exc.status_code, codes.get(exc.status_code, "HTTP_ERROR"), str(exc.detail))
 
 
@@ -84,6 +94,12 @@ def get_predictor(request: Request) -> Predictor:
     return request.app.state.predictor
 
 
+def rate_limit(request: Request):
+    client = request.client.host if request.client else "unknown"
+    if not request.app.state.limiter.allow(client):
+        raise HTTPException(429, "Too many requests, try again in a minute")
+
+
 api = APIRouter(prefix="/api/v1")
 
 
@@ -95,15 +111,17 @@ def health(request: Request):
     return {"status": "ok", "modelLoaded": True, "modelVersion": predictor.version}
 
 
-@api.post("/predict", response_model=Prediction)
+@api.post("/predict", response_model=Prediction, dependencies=[Depends(rate_limit)])
 def predict(customer: Customer, request: Request, predictor: Predictor = Depends(get_predictor)):
     probability, tier = predictor.predict(customer)
+    request.app.state.metrics.record_prediction(tier)
     return Prediction(
         predictionId=request.state.request_id,
         churnProbability=round(probability, 4),
         riskTier=tier,
         threshold=predictor.metadata["threshold"],
         modelVersion=predictor.version,
+        preprocessingVersion=predictor.metadata["preprocessing_version"],
         timestamp=datetime.now(UTC).isoformat(timespec="seconds"),
     )
 
@@ -121,6 +139,12 @@ def experiments(predictor: Predictor = Depends(get_predictor)):
 @api.get("/model-card")
 def model_card(predictor: Predictor = Depends(get_predictor)):
     return build_model_card(predictor.metadata)
+
+
+@api.get("/metrics")
+def metrics(request: Request):
+    predictor = request.app.state.predictor
+    return request.app.state.metrics.snapshot(predictor.version if predictor else None)
 
 
 app.include_router(api)
