@@ -5,6 +5,8 @@ services:
       - "${API_PORT:-8000}:8000"
     environment:
       CORS_ORIGINS: http://localhost:${WEB_PORT:-3000}
+      # Trust X-Forwarded-For from the web container so rate limits apply per real client.
+      FORWARDED_ALLOW_IPS: 172.16.0.0/12
 
   web:
     build: ./frontend
