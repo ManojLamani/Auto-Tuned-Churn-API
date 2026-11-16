@@ -21,12 +21,15 @@ export default function App() {
   const [error, setError] = useState(null);
   const [health, setHealth] = useState(null);
 
-  const load = useCallback(async () => {
-    setError(null);
-    setData(null);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) {
+      setError(null);
+      setData(null);
+    }
     try {
       const [model, experiments, card] = await Promise.all([api.model(), api.experiments(), api.modelCard()]);
       setData({ model, experiments, card });
+      setError(null);
     } catch (e) {
       setError(e.message);
     }
@@ -38,6 +41,13 @@ export default function App() {
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, [load]);
+
+  // While the API is unreachable, retry quietly every 5 s so the page recovers on its own.
+  useEffect(() => {
+    if (!error) return;
+    const id = setInterval(() => load(true), 5000);
+    return () => clearInterval(id);
+  }, [error, load]);
 
   // Re-check health every 30 s so the page notices an offline API or a newly deployed model.
   useEffect(() => {
@@ -93,13 +103,13 @@ export default function App() {
                 <b>Model metadata is out of date.</b> The API now serves <b>{health.version}</b>, but this page shows{" "}
                 <b>{data.model.model_version}</b>.
               </p>
-              <button onClick={load} className="rounded-lg bg-amber-600 px-3 py-1.5 font-semibold text-white hover:bg-amber-700">
+              <button onClick={() => load()} className="rounded-lg bg-amber-600 px-3 py-1.5 font-semibold text-white hover:bg-amber-700">
                 Reload data
               </button>
             </div>
           )}
           {error ? (
-            <ErrorState message={error} onRetry={load} />
+            <ErrorState message={error} onRetry={() => load()} />
           ) : !data ? (
             <div className="flex items-center justify-center gap-3 py-32 text-slate-500">
               <Spinner /> Loading model data…
@@ -133,6 +143,7 @@ function ErrorState({ message, onRetry }) {
       <div className="mx-auto mb-4 grid size-12 place-items-center rounded-full bg-rose-50 text-xl text-rose-600">!</div>
       <h2 className="text-lg font-semibold text-slate-900">Service unavailable</h2>
       <p className="mt-2 text-sm text-slate-600">{message}</p>
+      <p className="mt-1 text-xs text-slate-400">Retrying automatically every 5 seconds.</p>
       <button
         onClick={onRetry}
         className="mt-6 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
