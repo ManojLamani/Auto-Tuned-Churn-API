@@ -16,6 +16,7 @@ const PAGES = [
 const pageFromHash = () => PAGES.find((p) => `#${p.id}` === window.location.hash)?.id || "overview";
 
 export default function App() {
+  const [history, setHistory] = useState([]);
   const [page, setPage] = useState(pageFromHash);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -115,7 +116,7 @@ export default function App() {
               <Spinner /> Loading model data…
             </div>
           ) : (
-            <Page {...data} />
+            <Page {...data} history={history} setHistory={setHistory} />
           )}
         </main>
       </div>

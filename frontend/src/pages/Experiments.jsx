@@ -7,6 +7,7 @@ const TYPE = {
 };
 
 export default function Experiments({ experiments, model }) {
+  if (!experiments.length) return <Card title="Experiment log"><p>No experiments are available for this model.</p></Card>;
   const final = experiments.find((r) => r.type === "final_random_search");
   const nested = experiments.filter((r) => r.type === "nested_cv_random_search");
 
@@ -74,9 +75,9 @@ export default function Experiments({ experiments, model }) {
           </div>
         </Card>
 
-        <Card title="Selected configuration" subtitle={`${final.model} · best of ${final.n_iter} sampled configurations`}>
+        <Card title="Selected configuration" subtitle={final ? `${final.model} · best of ${final.n_iter} sampled configurations` : "No final configuration recorded"}>
           <dl className="grid grid-cols-2 gap-3">
-            {Object.entries(final.best_params).map(([k, v]) => (
+            {Object.entries(final?.best_params || {}).map(([k, v]) => (
               <div key={k} className="rounded-lg bg-slate-50 px-3 py-2">
                 <dt className="text-xs text-slate-500">{k}</dt>
                 <dd className="font-mono text-sm text-slate-900">{v === null ? "None" : String(v)}</dd>
@@ -84,7 +85,7 @@ export default function Experiments({ experiments, model }) {
             ))}
             <div className="rounded-lg bg-indigo-50 px-3 py-2">
               <dt className="text-xs text-indigo-600">threshold</dt>
-              <dd className="font-mono text-sm text-indigo-900">{final.threshold}</dd>
+              <dd className="font-mono text-sm text-indigo-900">{final?.threshold ?? model.threshold}</dd>
             </div>
           </dl>
         </Card>

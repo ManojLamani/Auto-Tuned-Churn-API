@@ -35,6 +35,7 @@ async def lifespan(app: FastAPI):
         log.info("Loaded model %s in %s ms", app.state.predictor.version, app.state.metrics.model_load_ms)
     except Exception as exc:  # the service still starts, but reports degraded health
         app.state.predictor = None
+        app.state.metrics.model_load_failures += 1
         log.error("Model failed to load: %s", exc)
     yield
 
@@ -49,11 +50,14 @@ async def request_logging(request: Request, call_next):
     """Log request ID, route, status, latency, model version and error code. Inputs are never logged."""
     request.state.request_id = uuid.uuid4().hex[:12]
     start = time.perf_counter()
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        response = await unexpected_error(request, exc)
     latency_ms = (time.perf_counter() - start) * 1000
     response.headers["X-Request-ID"] = request.state.request_id
-    request.app.state.metrics.record_request(response.status_code, latency_ms)
     predictor = request.app.state.predictor
+    request.app.state.metrics.record_request(response.status_code, latency_ms, predictor.version if predictor else None)
     log.info("id=%s %s %s status=%s latency_ms=%.1f model=%s error=%s", request.state.request_id,
              request.method, request.url.path, response.status_code, latency_ms,
              predictor.version if predictor else None, getattr(request.state, "error_code", None))
@@ -120,6 +124,7 @@ def predict(customer: Customer, request: Request, predictor: Predictor = Depends
         churnProbability=round(probability, 4),
         riskTier=tier,
         threshold=predictor.metadata["threshold"],
+        thresholdVersion=predictor.threshold_version,
         modelVersion=predictor.version,
         preprocessingVersion=predictor.metadata["preprocessing_version"],
         timestamp=datetime.now(UTC).isoformat(timespec="seconds"),

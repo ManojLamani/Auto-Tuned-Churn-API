@@ -46,6 +46,7 @@ def run_nested_cv(X, y, names=tuple(ESTIMATORS), n_iter=N_ITER,
         )
         results[name] = {
             "outer_fold_f1": scores["test_f1"].round(4).tolist(),
+            "fold_metrics": {m: scores[f"test_{m}"].round(6).tolist() for m in CV_SCORING},
             "means": {m: round(float(scores[f"test_{m}"].mean()), 4) for m in CV_SCORING},
             "f1_std": round(float(np.std(scores["test_f1"])), 4),
             "fold_params": [est.best_params_ for est in scores["estimator"]],

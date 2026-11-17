@@ -5,5 +5,5 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: { proxy: { "/api": process.env.API_URL || "http://127.0.0.1:8000" } },
-  test: { environment: "jsdom" },
+  test: { environment: "jsdom", exclude: ["e2e/**", "node_modules/**"] },
 });

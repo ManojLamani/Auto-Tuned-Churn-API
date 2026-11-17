@@ -8,6 +8,8 @@ const EVAL_LABELS = {
   testBaselineF1: "Test baseline F1",
   testPrecision: "Test precision",
   testRecall: "Test recall",
+  testRocAuc: "Test ROC-AUC",
+  testPrAuc: "Test PR-AUC",
 };
 
 export default function ModelCard({ card }) {

@@ -2,17 +2,16 @@
 
 Run: python -m training.models.train_final
 """
-import json
 import time
 from collections import Counter
 from datetime import UTC, datetime
 
-import joblib
 import sklearn
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_validate
 
+from training.artifacts import new_version, save_release
 from training.config import (
     DATA_PATH,
     INNER_FOLDS,
@@ -34,6 +33,7 @@ from training.evaluation import (
 )
 from training.features import build_pipeline, feature_types
 from training.models.nested_cv import make_search, run_nested_cv
+from training.schema import Customer
 
 
 def describe_space(space):
@@ -66,7 +66,7 @@ def main():
     cv5 = StratifiedKFold(5, shuffle=True, random_state=SEED)
     common = {"dataset_version": dataset_version(), "split_seed": SEED,
               "test_size": TEST_SIZE, "scoring": "f1", "timestamp": run_time,
-              "preprocessing_version": PREPROCESSING_VERSION}
+              "preprocessing_version": PREPROCESSING_VERSION, "schema_version": 2}
     log = []
 
     # 1. Baselines (training set CV only)
@@ -75,9 +75,13 @@ def main():
         "Logistic Regression (default)": LogisticRegression(max_iter=1000, random_state=SEED),
     }
     for i, (name, model) in enumerate(baselines.items(), start=1):
+        started = time.perf_counter()
         s = cross_validate(build_pipeline(X_train, model), X_train, y_train, cv=cv5, scoring=CV_SCORING)
         log.append({"run_id": f"baseline-{i:02d}", "model": name, "type": "baseline",
-                    "cv": "StratifiedKFold(5)",
+                    "cv": "StratifiedKFold(5)", "inner_cv": None, "outer_cv": "StratifiedKFold(5)",
+                    "hyperparameters": model.get_params(), "threshold": 0.5,
+                    "fold_metrics": {m: s[f"test_{m}"].round(6).tolist() for m in CV_SCORING},
+                    "runtime_sec": round(time.perf_counter() - started, 3),
                     "cv_metrics": {m: round(float(s[f"test_{m}"].mean()), 4) for m in CV_SCORING},
                     "cv_f1_mean": round(float(s["test_f1"].mean()), 4),
                     "cv_f1_std": round(float(s["test_f1"].std()), 4), **common})
@@ -94,6 +98,8 @@ def main():
                     "outer_fold_f1": r["outer_fold_f1"], "cv_metrics": r["means"],
                     "cv_f1_mean": r["means"]["f1"], "cv_f1_std": r["f1_std"],
                     "fold_params": [clean_params(p) for p in r["fold_params"]],
+                    "hyperparameters": [clean_params(p) for p in r["fold_params"]],
+                    "fold_metrics": r["fold_metrics"], "threshold": 0.5,
                     "runtime_sec": r["runtime_sec"], **common})
         print(f"{name}: nested CV F1 {r['means']['f1']} +/- {r['f1_std']}")
 
@@ -125,18 +131,26 @@ def main():
                 "search_space": describe_space(SEARCH_SPACES[champion]), "n_iter": N_ITER,
                 "inner_cv": f"StratifiedKFold({INNER_FOLDS})",
                 "best_params": clean_params(search.best_params_),
+                "hyperparameters": clean_params(search.best_params_), "outer_cv": None,
+                "fold_metrics": {"f1": [float(search.cv_results_[f"split{i}_test_score"][search.best_index_])
+                                         for i in range(INNER_FOLDS)]},
+                "search_trials": [{"params": clean_params(p), "mean_f1": round(float(score), 6)}
+                                  for p, score in zip(search.cv_results_["params"],
+                                                      search.cv_results_["mean_test_score"], strict=True)],
                 "cv_f1_mean": round(float(search.best_score_), 4), "threshold": threshold,
                 "test_metrics": rounded(test),
                 "runtime_sec": round(time.perf_counter() - start, 1), **common})
 
     # 6. Save the versioned artifact
     numerical, categorical = feature_types(X_train)
-    version = "churn-" + ("lr" if champion == "Logistic Regression" else "rf") + "-v1"
+    version = new_version(champion)
     for run in log:
         run["artifact_version"] = version
     metadata = {
         "model_name": champion,
         "model_version": version,
+        "threshold_version": f"{version}:threshold",
+        "feature_types": {name: spec["type"] for name, spec in Customer.model_json_schema()["properties"].items()},
         "dataset_id": DATA_PATH.name,
         "dataset_version": dataset_version(),
         "training_timestamp": run_time,
@@ -163,13 +177,10 @@ def main():
             "categorical": {c: sorted(X_train[c].unique().tolist()) for c in categorical},
         },
     }
-    MODELS_DIR.mkdir(exist_ok=True)
-    for old in MODELS_DIR.glob("*.joblib"):
-        old.unlink()
-    joblib.dump({"pipeline": model, "metadata": metadata}, MODELS_DIR / f"{version}.joblib", compress=3)
-    (MODELS_DIR / "model_metadata.json").write_text(json.dumps(metadata, indent=2))
-    (MODELS_DIR / "experiment_log.json").write_text(json.dumps(log, indent=2))
-    print(f"Saved {version} (threshold {threshold}) to {MODELS_DIR}")
+    destination = save_release(MODELS_DIR, model, metadata, log)
+    print(f"Saved {version} (threshold {threshold}) to {destination}")
+    return metadata, log
+
 
 
 if __name__ == "__main__":

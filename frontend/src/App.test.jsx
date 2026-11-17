@@ -2,10 +2,22 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import App from "./App";
+import Experiments from "./pages/Experiments";
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+});
+
+test("experiment page handles an empty log", () => {
+  render(<Experiments experiments={[]} model={{}} />);
+  expect(screen.getByText("No experiments are available for this model.")).toBeTruthy();
+});
+
+test("experiment page handles logs without a final fit", () => {
+  render(<Experiments experiments={[{ run_id: "baseline", model: "Baseline", type: "baseline", cv_f1_mean: 0.5 }]}
+    model={{ search_config: { seed: 42 }, cv_config: { inner: "3", outer: "5" }, threshold: 0.5 }} />);
+  expect(screen.getByText("No final configuration recorded")).toBeTruthy();
 });
 
 test("shows a retryable error when the API is down", async () => {

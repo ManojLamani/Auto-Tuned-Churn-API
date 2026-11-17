@@ -1,0 +1,4 @@
+# Model manifests verify exact bytes on Windows and Linux.
+models/*.json text eol=lf
+models/versions/**/*.json text eol=lf
+*.joblib binary

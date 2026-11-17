@@ -18,6 +18,7 @@ def test_001_valid_prediction(client, customer):
     assert body["riskTier"] in {"HIGH", "MEDIUM", "LOW"}
     assert body["modelVersion"] == "churn-rf-v1"
     assert body["preprocessingVersion"] == "v1"
+    assert body["thresholdVersion"] == "churn-rf-v1:threshold"
     assert r.headers["X-Request-ID"] == body["predictionId"]
 
 
@@ -100,3 +101,19 @@ def test_metrics(client, customer):
     assert after["errors"] >= before["errors"] + 1
     assert after["latencyMs"]["p95"] is not None
     assert after["modelVersion"] == "churn-rf-v1" and after["modelLoadMs"] > 0
+    assert after["modelLoadFailures"] == 0
+    assert after["requestsPerSecond"] >= 0
+    assert after["modelVersionRequests"]["churn-rf-v1"] > 0
+
+
+def test_unexpected_errors_are_structured_logged_and_counted(client, customer, monkeypatch):
+    def fail(_customer):
+        raise RuntimeError("inference failed")
+
+    monkeypatch.setattr(client.app.state.predictor, "predict", fail)
+    before = client.get("/api/v1/metrics").json()["errors"]
+    response = client.post(PREDICT, json=customer)
+    assert response.status_code == 500
+    assert response.json()["error"]["code"] == "INTERNAL_ERROR"
+    assert response.headers["X-Request-ID"] == response.json()["error"]["requestId"]
+    assert client.get("/api/v1/metrics").json()["errors"] == before + 1

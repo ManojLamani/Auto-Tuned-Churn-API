@@ -11,11 +11,14 @@ class Metrics:
         self.latencies = deque(maxlen=1000)
         self.tier_counts = Counter()
         self.model_load_ms = None
+        self.model_load_failures = 0
+        self.version_counts = Counter()
 
-    def record_request(self, status, latency_ms):
+    def record_request(self, status, latency_ms, model_version=None):
         self.requests += 1
         self.status_counts[status] += 1
         self.latencies.append(latency_ms)
+        self.version_counts[model_version or "unavailable"] += 1
 
     def record_prediction(self, tier):
         self.tier_counts[tier] += 1
@@ -30,6 +33,9 @@ class Metrics:
         return {
             "modelVersion": model_version,
             "modelLoadMs": self.model_load_ms,
+            "modelLoadFailures": self.model_load_failures,
+            "requestsPerSecond": round(self.requests / max(time.time() - self.started, 1), 4),
+            "modelVersionRequests": dict(self.version_counts),
             "uptimeSec": round(time.time() - self.started),
             "requests": self.requests,
             "errors": errors,

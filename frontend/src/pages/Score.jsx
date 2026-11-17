@@ -39,12 +39,11 @@ const EMPTY = Object.fromEntries(Object.keys(LABELS).map((k) => [k, ""]));
 const inputClass =
   "mt-1 block w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500";
 
-export default function Score({ model }) {
+export default function Score({ model, history, setHistory }) {
   const schema = model.feature_schema;
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState({});
   const [state, setState] = useState({ status: "idle" });
-  const [history, setHistory] = useState([]);
 
   const options = (field) =>
     field === "SeniorCitizen" ? [["0", "No"], ["1", "Yes"]] : schema.categorical[field]?.map((v) => [v, v]);
@@ -245,6 +244,7 @@ function Result({ state, model }) {
       <dl className="mt-5 grid grid-cols-2 gap-3 text-xs">
         <div><dt className="text-slate-500">Model</dt><dd className="font-medium text-slate-900">{r.modelVersion}</dd></div>
         <div><dt className="text-slate-500">Preprocessing</dt><dd className="font-medium text-slate-900">{r.preprocessingVersion}</dd></div>
+        <div><dt className="text-slate-500">Threshold version</dt><dd className="font-medium text-slate-900">{r.thresholdVersion}</dd></div>
         <div><dt className="text-slate-500">Scored at</dt><dd className="font-medium text-slate-900">{new Date(r.timestamp).toLocaleString()}</dd></div>
         <div><dt className="text-slate-500">Prediction ID</dt><dd className="font-mono text-slate-900">{r.predictionId}</dd></div>
       </dl>

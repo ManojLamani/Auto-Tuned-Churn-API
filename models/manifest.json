@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "artifact": "churn-rf-v1.joblib",
+  "files": {
+    "churn-rf-v1.joblib": "22470a1458df0a05a3b426ad90f9c0f7a7f9c526f5078da996306a5e5d6bb8cd",
+    "model_metadata.json": "4d5694a75ebad8a447f01d4171e83b90fc86606a44038a2d49e5a64f6c3cf357",
+    "experiment_log.json": "21e6520c5ad63ac617c99c552a66b3506be2886855033e493759f0f85bbe3f5e"
+  }
+}

@@ -1,19 +1,16 @@
 """Loads the versioned artifact once and turns a validated customer into a score + risk tier."""
-import json
+import os
 
-import joblib
 import pandas as pd
 
 from backend.app.schemas import Customer
+from training.artifacts import load_release
 from training.evaluation import risk_tier
 
 
 class Predictor:
-    def __init__(self, models_dir):
-        artifacts = sorted(models_dir.glob("*.joblib"))
-        if not artifacts:
-            raise FileNotFoundError(f"No model artifact in {models_dir}")
-        bundle = joblib.load(artifacts[-1])
+    def __init__(self, models_dir, version=None):
+        bundle, self.experiments = load_release(models_dir, version or os.getenv("MODEL_VERSION"))
         self.pipeline = bundle["pipeline"]
         self.metadata = bundle["metadata"]
 
@@ -22,8 +19,10 @@ class Predictor:
         if expected != set(Customer.model_fields):
             raise ValueError("API schema does not match the model's feature schema")
 
-        log_path = models_dir / "experiment_log.json"
-        self.experiments = json.loads(log_path.read_text()) if log_path.exists() else []
+
+    @property
+    def threshold_version(self):
+        return self.metadata.get("threshold_version", f"{self.version}:threshold")
 
     @property
     def version(self):

@@ -10,6 +10,7 @@ def build_model_card(meta):
             "trainedAt": meta["training_timestamp"],
             "hyperparameters": meta["hyperparameters"],
             "threshold": meta["threshold"],
+            "thresholdVersion": meta.get("threshold_version", f"{meta['model_version']}:threshold"),
         },
         "intendedUse": "Educational churn prediction and retention prioritisation. Helps retention "
                        "teams decide which customers to contact first.",
@@ -31,6 +32,8 @@ def build_model_card(meta):
             "testBaselineF1": m["test_baseline"]["f1"],
             "testPrecision": m["test"]["precision"],
             "testRecall": m["test"]["recall"],
+            "testRocAuc": m["test"]["roc_auc"],
+            "testPrAuc": m["test"]["pr_auc"],
         },
         "limitations": [
             "The dataset may not represent today's or another company's customers.",
@@ -41,7 +44,9 @@ def build_model_card(meta):
         ],
         "ethicalConsiderations": "Scores are estimates. Use them with human review, never to deny "
                                  "service or treat customers unfairly. Monitor performance across "
-                                 "customer groups.",
+                                 "customer groups. Gender, senior status and billing choices can act as proxies. "
+                                 "Subgroup fairness has not been established; validate it before customer use. "
+                                 "Raw customer inputs are neither persisted nor logged.",
         "monitoring": "Track input drift, missing values, prediction distribution, calibration and "
                       "F1/precision/recall once real outcomes arrive.",
     }

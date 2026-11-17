@@ -64,7 +64,7 @@ flowchart LR
 ### High-Level Components:
 - **`training/`**: Data ingestion, schema validation, EDA generators, feature engineering pipelines, nested CV orchestration, and experiment logging.
 - **`backend/`**: High-performance, stateless FastAPI inference microservice with Pydantic request validation, CORS configuration, and comprehensive health monitoring.
-- **`frontend/`**: Analyst-facing React dashboard featuring real-time single-customer scoring, threshold simulators, baseline vs. tuned metric visualizers, and interactive model cards.
+- **`frontend/`**: Analyst-facing React dashboard featuring real-time single-customer scoring, threshold interpretation, baseline vs. tuned metric visualizers, and interactive model cards.
 - **`artifacts/`**: Versioned, self-contained deployment packages (fitted pipeline + decision threshold + feature schema metadata).
 
 ---
@@ -136,9 +136,21 @@ The EDA and step-by-step analysis live in `notebooks/01_dataset_preparation.ipyn
 python -m training.models.nested_cv
 
 # Full run: baselines, nested CV, final fit, threshold, one test evaluation,
-# then saves models/churn-rf-v1.joblib, model_metadata.json and experiment_log.json
+# then saves an immutable release under models/versions/ and activates it
 python -m training.models.train_final
 ```
+
+The notebook invokes this same training/export function. Every new run has a unique
+model version, threshold version, complete experiment records and SHA-256 manifest.
+The existing `models/churn-rf-v1.joblib` remains the original release; historical
+experiment fields that were not recorded are not reconstructed. New logs use schema v2.
+
+To select or roll back to a saved model, run `python -m training.artifacts VERSION`
+(for example, `churn-rf-v1`) and restart the API. `models/active.json` selects the
+release; `MODEL_VERSION` can pin an API process to a specific saved version.
+Previous models and logs are retained. Run `python -m training.validate_artifact`
+to verify the selected bundle. Only load artifacts and manifests from trusted sources:
+checksums detect corruption, and do not authenticate a replaced manifest.
 
 ### 4. Running the Serving Stack
 ```bash
@@ -173,6 +185,11 @@ Dashboard on http://localhost:3000, API on http://localhost:8000. Use `API_PORT`
 pytest -q                     # API, determinism, leakage and nested CV tests
 cd frontend && npm test       # UI error-state test
 ```
+
+For the browser-to-API integration tests, run `npx playwright install chromium` and
+`npm run test:e2e` inside `frontend/`. The tests start temporary local FastAPI/Vite
+servers and check scoring, error states, keyboard use and mobile layout. If needed,
+set `E2E_PYTHON` to the Python virtual environment executable. CI runs these tests too.
 
 ---
 
