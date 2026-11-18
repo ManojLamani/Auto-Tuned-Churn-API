@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "artifact": "artifact.joblib",
+  "files": {
+    "artifact.joblib": "fb5c42ce132687f79fc013d5bbd6f0d18c59e2527e106bdde8ef50d08291e439",
+    "model_metadata.json": "3e1db74ceb17a0ebd54faf041b2fd006fff1733da78fe2242def122cab8e8ee9",
+    "experiment_log.json": "3d73383193c83c8ac70afdde4e06d8bc6cebb2b18dc9b9e2236c8705dfd2ab51"
+  }
+}
