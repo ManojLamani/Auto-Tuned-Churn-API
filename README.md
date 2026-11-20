@@ -1,51 +1,156 @@
 # Auto-Tuned Churn API
 
-[![CI](https://github.com/ManojLamani/Auto-Tuned-Churn-API/actions/workflows/ci.yml/badge.svg)](https://github.com/ManojLamani/Auto-Tuned-Churn-API/actions/workflows/ci.yml)
-[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=black)](https://react.dev)
-[![Vercel](https://img.shields.io/badge/deployed%20on-Vercel-000000.svg?logo=vercel)](https://auto-tuned-churn-api.vercel.app)
+A **customer churn prediction service** with an auto-tuned Random Forest, a FastAPI inference API and a React dashboard for retention analysts. Enter a customer's account details, and the app returns their churn probability, a risk tier and the model version behind the score.
 
-Customer churn prediction service with a tuned Random Forest, an inference API and an analyst dashboard.
+**Live demo:** [auto-tuned-churn-api.vercel.app](https://auto-tuned-churn-api.vercel.app)
 
-**Live demo:** [auto-tuned-churn-api.vercel.app](https://auto-tuned-churn-api.vercel.app) · **API health:** [`/api/v1/health`](https://auto-tuned-churn-api.vercel.app/api/v1/health)
+---
 
-## Overview
+## ✨ Features
 
-The model is tuned with Random Search ([Bergstra & Bengio, 2012](https://www.jmlr.org/papers/v13/bergstra12a.html)) and evaluated with nested cross-validation. All preprocessing lives inside scikit-learn pipelines, and a stratified holdout set is used only once for the final evaluation, so the reported scores are not inflated by tuning or leakage.
+- **Auto-Tuned Model** – Random Search ([Bergstra & Bengio, 2012](https://www.jmlr.org/papers/v13/bergstra12a.html)) tunes a Random Forest, and nested cross-validation measures how well the tuning generalises.
+- **Leakage-Safe Training** – All preprocessing runs inside scikit-learn pipelines, and the holdout test set is used only once.
+- **Customer Scoring** – Score any customer from the dashboard and get a churn probability with a High, Medium or Low risk tier.
+- **Model Transparency** – Model performance, the tuning experiment log and a model card are all visible in the dashboard.
+- **Versioned Releases** – Every training run saves a new model version with a checksum manifest, and you can switch back to any earlier version.
+- **Production-Style API** – Input validation, rate limiting, structured errors, health checks and request metrics.
 
-| Model (IBM Telco, holdout test set) | F1 | Recall | ROC-AUC |
-|---|---|---|---|
+---
+
+## 📊 Results
+
+Measured on the IBM Telco holdout test set:
+
+| Model | F1 | Recall | ROC-AUC |
+|-------|----|--------|---------|
 | Logistic Regression (baseline) | 0.604 | 0.559 | 0.842 |
 | **Random Forest (tuned)** | **0.636** | **0.767** | 0.839 |
 
-Nested CV F1: 0.631 ± 0.013 (5 outer folds, 3 inner folds).
+Nested cross-validation F1: **0.631 ± 0.013** (5 outer folds, 3 inner folds).
 
-## Architecture
+---
 
-```mermaid
-flowchart LR
-    A[Telco dataset] --> B[Holdout split]
-    B --> C[Random Search + nested CV]
-    C --> D[(Versioned model release)]
-    D --> E[FastAPI /api/v1]
-    E <--> F[React dashboard]
+## 🗂 File Structure
+
+```
+Auto-Tuned-Churn-API/
+├── api/
+│   └── index.py          # Vercel entrypoint (loads the FastAPI app and model)
+├── backend/app/
+│   ├── main.py           # FastAPI app and /api/v1 endpoints
+│   ├── predictor.py      # Model loading and inference
+│   ├── schemas.py        # Request and response schemas
+│   └── monitoring.py     # Request metrics and rate limiting
+├── training/
+│   ├── models/           # Nested CV and final training scripts
+│   ├── features.py       # Preprocessing pipelines
+│   ├── artifacts.py      # Model releases and version switching
+│   └── validate_artifact.py
+├── frontend/src/
+│   ├── pages/            # Overview, Score, Experiments, Model card
+│   └── api.js            # API client
+├── models/               # Saved model versions and experiment logs
+├── notebooks/            # EDA and training walkthrough
+├── tests/                # API, data, leakage and performance tests
+├── vercel.json           # Vercel deployment config
+├── docker-compose.yml    # Local API + dashboard containers
+└── requirements.txt      # Python dependencies
 ```
 
-| Folder | Contents |
-|---|---|
-| `training/` | Data validation, feature pipelines, nested CV, final training and model releases |
-| `backend/` | FastAPI inference service |
-| `frontend/` | React + Tailwind dashboard (overview, scoring, experiments, model card) |
-| `models/` | Versioned model artifacts and experiment logs |
-| `notebooks/` | EDA and step-by-step training walkthrough |
-| `api/` | Vercel serverless entrypoint |
-| `tests/` | API, data validation, leakage and performance tests |
+---
 
-## API
+## ⚙️ Setup & Installation
+
+### Prerequisites
+- **Python 3.14**. Check with `python --version` (Windows: `py --version`).
+- **Node.js 24** for the dashboard. Check with `node --version`.
+- **Docker** (optional), to run everything with one command.
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/ManojLamani/Auto-Tuned-Churn-API.git
+cd Auto-Tuned-Churn-API
+```
+
+### 2. Create a Virtual Environment and Install Dependencies
+
+#### 🐧 Linux & 🍎 macOS
+```bash
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+#### 🪟 Windows (PowerShell)
+```powershell
+py -m venv venv
+venv\Scripts\python -m pip install -r requirements.txt
+```
+
+### 3. Run the API
+
+**Linux & macOS** (with the venv activated):
+```bash
+python -m uvicorn backend.app.main:app --reload --port 8000
+```
+
+**Windows:**
+```powershell
+venv\Scripts\python -m uvicorn backend.app.main:app --reload --port 8000
+```
+
+The API docs will be available at **http://127.0.0.1:8000/docs**.
+
+### 4. Run the Dashboard
+In a second terminal:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The dashboard will be available at **http://127.0.0.1:5173**.
+
+### Using Docker Instead
+```bash
+docker compose up -d --build
+```
+The dashboard runs on **http://localhost:3000** and the API on **http://localhost:8000**.
+
+### Troubleshooting
+- **`'uvicorn' is not recognized`:** run it through Python as shown above (`python -m uvicorn …`).
+- **Port 8000 or 3000 already in use:** for uvicorn, use `--port 8001`. For Docker, set `API_PORT` and `WEB_PORT`, e.g. `API_PORT=8001 WEB_PORT=3001 docker compose up -d`.
+- **Dashboard shows "Service unavailable":** the API is not running. Start it (step 3), and the dashboard reconnects automatically.
+
+---
+
+## 🚀 How to Use
+
+### Overview
+Open the dashboard. The **Overview** page shows the tuned model's test scores next to the baseline, the nested CV score and the model comparison.
+
+### Score a Customer
+1. Click **Score customer** in the sidebar.
+2. Fill in the customer's details, or click **High-risk example** or **Low-risk example** to load a sample.
+3. Click **Score customer**. The result shows the churn probability, the risk tier and the model version.
+
+### Experiments & Model Card
+- **Experiments** lists the tuning runs with their CV F1 scores, plus the nested CV score for each outer fold.
+- **Model card** describes the model, its data, evaluation, threshold and limitations.
+
+### Training a New Model
+```bash
+python -m training.models.train_final      # train, evaluate and save a new version
+python -m training.artifacts churn-rf-v1   # switch the active model version
+python -m training.validate_artifact       # verify the active version
+```
+
+---
+
+## 🔌 API Endpoints
 
 | Method | Endpoint | Description |
-|---|---|---|
+|--------|----------|-------------|
 | GET | `/api/v1/health` | Service and model status |
 | POST | `/api/v1/predict` | Churn probability, risk tier and model version |
 | GET | `/api/v1/model` | Model metadata and metrics |
@@ -53,45 +158,24 @@ flowchart LR
 | GET | `/api/v1/model-card` | Model card |
 | GET | `/api/v1/metrics` | Request, latency and prediction counters |
 
-`/predict` is rate limited to 60 requests per minute per client (`RATE_LIMIT_PER_MINUTE`).
+---
 
-## Getting Started
+## 🛠 Tech Stack
 
-Requirements: Python 3.14 and Node.js 24.
+| Layer | Technology |
+|-------|-----------|
+| **Machine Learning** | scikit-learn, pandas, NumPy |
+| **Backend** | FastAPI, Pydantic, Uvicorn |
+| **Frontend** | React 19, Vite, Tailwind CSS |
+| **Testing** | pytest, Vitest, Playwright |
+| **Deployment** | Vercel, Docker, GitHub Actions |
 
-```bash
-git clone https://github.com/ManojLamani/Auto-Tuned-Churn-API.git
-cd Auto-Tuned-Churn-API
-python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+---
 
-uvicorn backend.app.main:app --reload --port 8000  # API: http://127.0.0.1:8000/docs
-cd frontend && npm install && npm run dev          # Dashboard: http://127.0.0.1:5173
-```
+## 📝 Notes
 
-Or run both with Docker: `docker compose up -d --build` (dashboard on port 3000, API on port 8000).
-
-### Training
-
-```bash
-python -m training.models.train_final       # train, evaluate and save a new model release
-python -m training.artifacts churn-rf-v1    # switch the active model version
-python -m training.validate_artifact        # verify the active release
-```
-
-Training can optionally add synthetic rows from [Kaggle Playground S6E3](https://www.kaggle.com/competitions/playground-series-s6e3/data) placed at `data/kaggle_s6e3_train.csv`. They are used for training only, never for validation or testing.
-
-### Tests
-
-```bash
-pytest -q
-cd frontend && npm test && npm run test:e2e
-```
-
-## Deployment
-
-The project is deployed on [Vercel](https://auto-tuned-churn-api.vercel.app): the dashboard is served as a static site and the API runs as a Python serverless function (see `vercel.json`). Every push to `main` deploys automatically.
-
-## Disclaimer
-
-This is a decision-support tool for prioritising retention outreach. Predictions are probabilities, not certainties, and should be reviewed by a person before any action is taken.
+- The live demo runs on **Vercel**: the dashboard is a static site and the API is a Python serverless function. Every push to `main` redeploys it.
+- `/predict` is limited to 60 requests per minute per client (`RATE_LIMIT_PER_MINUTE`).
+- Training can optionally add synthetic rows from [Kaggle Playground S6E3](https://www.kaggle.com/competitions/playground-series-s6e3/data) placed at `data/kaggle_s6e3_train.csv`. They are used for training only, never for validation or testing.
+- Run the tests with `pytest -q`, and `npm test` inside `frontend/`.
+- This is a **decision-support tool**. Predictions are probabilities, not certainties, and should be reviewed by a person before any action is taken.
